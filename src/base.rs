@@ -3,22 +3,30 @@ use fltk::{
     prelude::{WidgetBase, WidgetExt, WidgetType},
 };
 
-/// The base listener widget
+pub(crate) trait ValueListener<T: WidgetBase + WidgetExt, V> {
+    /// register callback
+    fn new(wid: &mut T) -> Self;
+    /// get event
+    fn value(&self) -> V;
+}
+
+/// The base listener widget, wraps a fltk widget as [`WidgetBase`].
 #[derive(Clone)]
-pub struct BaseListener<T: WidgetBase + WidgetExt, TRIG> {
+pub struct BaseListenerWidget<T: WidgetBase + WidgetExt, TRIG> {
     #[allow(dead_code)]
     pub(crate) wid: T,
     pub(crate) trig: TRIG,
 }
 
-/// `#[derive(Default)]` is not valid
-impl<T: WidgetBase + WidgetExt + Default + Into<BaseListener<T, TRIG>>, TRIG> Default for BaseListener<T, TRIG> {
+/// `#[derive(Default)]` won't register callbacks, so we must impl `Default` manually.
+impl<T: WidgetBase + WidgetExt + Default + Into<BaseListenerWidget<T, TRIG>>, TRIG> Default for BaseListenerWidget<T, TRIG> {
     fn default() -> Self {
         T::default().into()
     }
 }
 
-impl<T: WidgetBase + WidgetExt, TRIG> std::ops::Deref for BaseListener<T, TRIG> {
+/// Used to call methods like [`WidgetExt::x`].
+impl<T: WidgetBase + WidgetExt, TRIG> std::ops::Deref for BaseListenerWidget<T, TRIG> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -26,31 +34,34 @@ impl<T: WidgetBase + WidgetExt, TRIG> std::ops::Deref for BaseListener<T, TRIG> 
     }
 }
 
-impl<T: WidgetBase + WidgetExt, TRIG> std::ops::DerefMut for BaseListener<T, TRIG> {
+/// Used to call methods like [`WidgetExt::set_pos`].
+impl<T: WidgetBase + WidgetExt, TRIG> std::ops::DerefMut for BaseListenerWidget<T, TRIG> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.wid
     }
 }
 
-/// Constructors, depends on `impl From<T> for BaseListener<T, TRIG>`
-impl<T: WidgetBase + WidgetExt + Into<BaseListener<T, TRIG>>, TRIG> BaseListener<T, TRIG> {
+/// Constructors, depends on `impl From<T> for BaseListener<T, TRIG>`, see [`crate::blocking::ListenerWidget`]
+impl<T: WidgetBase + WidgetExt + Into<BaseListenerWidget<T, TRIG>>, TRIG> BaseListenerWidget<T, TRIG> {
     pub fn from_widget(wid: T) -> Self {
         wid.into()
     }
 
-    /// The same constructor for fltk-rs widgets can be used for Listeners
+    /// Creates a new widget, takes an x, y coordinates, as well as a width and height, plus a title.
+    /// Same as [`WidgetBase::new`]
     pub fn new<S: Into<Option<&'static str>>>(x: i32, y: i32, w: i32, h: i32, label: S) -> Self {
         T::new(x, y, w, h, label).into()
     }
 
-    /// Construct a widget filling the parent
+    /// Construct a widget filling the parent.
+    /// Same as [`WidgetBase::default_fill`]
     pub fn default_fill() -> Self {
         T::default_fill().into()
     }
 }
 
-/// Builder functions, delegated to `WidgetBase` 
-impl<T: WidgetBase + WidgetExt, TRIG> BaseListener<T, TRIG> {
+/// Builder functions, delegated to [`WidgetBase`]
+impl<T: WidgetBase + WidgetExt, TRIG> BaseListenerWidget<T, TRIG> {
     /// Initialize to position x, y
     pub fn with_pos(mut self, x: i32, y: i32) -> Self {
         self.wid = self.wid.with_pos(x, y);

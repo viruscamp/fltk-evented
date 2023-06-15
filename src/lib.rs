@@ -13,16 +13,15 @@ r##"
 
 #![allow(clippy::needless_doctest_main)]
 
-mod base;
-pub use base::BaseListener;
+pub mod base;
 
-mod blocking;
+pub mod blocking;
 pub use blocking::Listener;
 
 #[cfg(all(feature = "tokio", feature = "async-std"))]
 compile_error!("Features `tokio` and `sync-std` are mutually exclusive.");
 
 #[cfg(any(feature = "tokio", feature = "async-std"))]
-mod asynch;
+pub mod asynch;
 #[cfg(any(feature = "tokio", feature = "async-std"))]
 pub use asynch::AsyncListener;
