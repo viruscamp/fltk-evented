@@ -3,11 +3,13 @@ use fltk::{
     prelude::{WidgetBase, WidgetExt, WidgetType},
 };
 
-pub(crate) trait ValueListener<T: WidgetBase + WidgetExt, V> {
-    /// register callback
-    fn new(wid: &mut T) -> Self;
+pub(crate) trait ValueListener<T: WidgetBase + WidgetExt> : Sized {
+    /// use associate type to make sure that only one `ValueListener` can be `impl`ed.
+    type Value;
+    /// register callback, returns `&mut T` to make borrow checker happy.
+    fn new(wid: &mut T) -> (Self, &mut T);
     /// get event
-    fn value(&self) -> V;
+    fn value(&self) -> Self::Value;
 }
 
 /// The base listener widget, wraps a fltk widget as [`WidgetBase`].
@@ -16,6 +18,15 @@ pub struct BaseListenerWidget<T: WidgetBase + WidgetExt, TRIG> {
     #[allow(dead_code)]
     pub(crate) wid: T,
     pub(crate) trig: TRIG,
+}
+
+impl<T, TRIG, V> From<T> for BaseListenerWidget<T, TRIG>
+    where T: WidgetBase + WidgetExt, TRIG: ValueListener<T, Value=V>
+{
+    fn from(mut wid: T) -> Self {
+        let (trig, _) = <TRIG as ValueListener<T>>::new(&mut wid);
+        Self { wid, trig }
+    }
 }
 
 /// `#[derive(Default)]` won't register callbacks, so we must impl `Default` manually.
@@ -41,7 +52,7 @@ impl<T: WidgetBase + WidgetExt, TRIG> std::ops::DerefMut for BaseListenerWidget<
     }
 }
 
-/// Constructors, depends on `impl From<T> for BaseListener<T, TRIG>`, see [`crate::blocking::ListenerWidget`]
+/// Constructors, depends on `impl From<T> for BaseListener<T, TRIG>`, see [`crate::base::BaseListenerWidget::from`]
 impl<T: WidgetBase + WidgetExt + Into<BaseListenerWidget<T, TRIG>>, TRIG> BaseListenerWidget<T, TRIG> {
     pub fn from_widget(wid: T) -> Self {
         wid.into()

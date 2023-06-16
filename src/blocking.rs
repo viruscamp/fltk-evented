@@ -23,8 +23,10 @@ pub type EventWidget<T> = BaseListenerWidget<T, EventListener>;
 
 pub struct TriggeredListener(Rc<Cell<bool>>);
 
-impl<T: WidgetBase + WidgetExt> ValueListener<T, bool> for TriggeredListener {
-    fn new(wid: &mut T) -> Self {
+impl<T: WidgetBase + WidgetExt> ValueListener<T> for TriggeredListener {
+    type Value = bool;
+
+    fn new(wid: &mut T) -> (Self, &mut T) {
         let triggered = Rc::new(Cell::new(false));
         wid.set_callback({
             let triggered = triggered.clone();
@@ -32,7 +34,7 @@ impl<T: WidgetBase + WidgetExt> ValueListener<T, bool> for TriggeredListener {
                 triggered.set(true);
             }
         });
-        TriggeredListener(triggered)
+        (TriggeredListener(triggered), wid)
     }
 
     fn value(&self) -> bool {
@@ -40,25 +42,20 @@ impl<T: WidgetBase + WidgetExt> ValueListener<T, bool> for TriggeredListener {
     }
 }
 
-impl<T: WidgetBase + WidgetExt> From<T> for TriggeredWidget<T> {
-    fn from(mut wid: T) -> Self {
-        let trig = TriggeredListener::new(&mut wid);
-        Self { wid, trig }
-    }
-}
-
 impl<T: WidgetBase + WidgetExt> TriggeredWidget<T> {
     /// Check whether a widget was triggered
     pub fn triggered(&self) -> bool {
-        ValueListener::<T, _>::value(&self.trig)
+        ValueListener::<T>::value(&self.trig)
     }
 }
 
 
 pub struct EventListener(Rc<Cell<Event>>);
 
-impl<T: WidgetBase + WidgetExt> ValueListener<T, Event> for EventListener {
-    fn new(wid: &mut T) -> Self {
+impl<T: WidgetBase + WidgetExt> ValueListener<T> for EventListener {
+    type Value = Event;
+
+    fn new(wid: &mut T) -> (Self, &mut T) {
         let event = Rc::new(Cell::new(Event::NoEvent));
         wid.handle({
             let event = event.clone();
@@ -67,7 +64,7 @@ impl<T: WidgetBase + WidgetExt> ValueListener<T, Event> for EventListener {
                 true
             }
         });
-        EventListener(event)
+        (EventListener(event), wid)
     }
 
     fn value(&self) -> Event {
@@ -75,42 +72,40 @@ impl<T: WidgetBase + WidgetExt> ValueListener<T, Event> for EventListener {
     }
 }
 
-impl<T: WidgetBase + WidgetExt> From<T> for EventWidget<T> {
-    fn from(mut wid: T) -> Self {
-        let trig = EventListener::new(&mut wid);
-        Self { wid, trig }
-    }
-}
-
 impl<T: WidgetBase + WidgetExt> EventWidget<T> {
     /// Get an event the widget received,
     /// returns [`Event::NoEvent`] if no events received
     pub fn event(&self) -> Event {
-        ValueListener::<T, _>::value(&self.trig)
+        ValueListener::<T>::value(&self.trig)
     }
 }
 
 
 pub struct DualListener(TriggeredListener, EventListener);
 
-impl<T: WidgetBase + WidgetExt> From<T> for ListenerWidget<T> {
-    fn from(mut wid: T) -> Self {
-        let triggered = TriggeredListener::new(&mut wid);
-        let event = EventListener::new(&mut wid);
-        let trig = DualListener(triggered, event);
-        Self { wid, trig }
+impl<T: WidgetBase + WidgetExt> ValueListener<T> for DualListener {
+    type Value = ();
+
+    fn new(wid: &mut T) -> (Self, &mut T) {
+        // the `&mut T` returned is used here
+        let (triggered_listener, wid) = TriggeredListener::new(wid);
+        let (event_listener, wid) = EventListener::new(wid);
+        (Self(triggered_listener, event_listener), wid)
     }
+
+    /// should not be called
+    fn value(&self) {}
 }
 
 impl<T: WidgetBase + WidgetExt> ListenerWidget<T> {
     /// Check whether a widget was triggered
     pub fn triggered(&self) -> bool {
-        ValueListener::<T, _>::value(&self.trig.0)
+        ValueListener::<T>::value(&self.trig.0)
     }
 
     /// Get an event the widget received,
     /// returns [`Event::NoEvent`] if no events received
     pub fn event(&self) -> Event {
-        ValueListener::<T, _>::value(&self.trig.1)
+        ValueListener::<T>::value(&self.trig.1)
     }
 }
