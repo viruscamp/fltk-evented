@@ -21,6 +21,7 @@ pub type TriggeredWidget<T> = BaseListenerWidget<T, TriggeredListener>;
 pub type EventWidget<T> = BaseListenerWidget<T, EventListener>;
 
 
+#[derive(Debug, Clone)]
 pub struct TriggeredListener(Rc<Cell<bool>>);
 
 impl<T: WidgetBase + WidgetExt> ValueListener<T> for TriggeredListener {
@@ -50,6 +51,7 @@ impl<T: WidgetBase + WidgetExt> TriggeredWidget<T> {
 }
 
 
+#[derive(Debug, Clone)]
 pub struct EventListener(Rc<Cell<Event>>);
 
 impl<T: WidgetBase + WidgetExt> ValueListener<T> for EventListener {
@@ -81,6 +83,7 @@ impl<T: WidgetBase + WidgetExt> EventWidget<T> {
 }
 
 
+#[derive(Debug, Clone)]
 pub struct DualListener(TriggeredListener, EventListener);
 
 impl<T: WidgetBase + WidgetExt> ValueListener<T> for DualListener {

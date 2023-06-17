@@ -13,7 +13,7 @@ pub(crate) trait ValueListener<T: WidgetBase + WidgetExt> : Sized {
 }
 
 /// The base listener widget, wraps a fltk widget as [`WidgetBase`].
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct BaseListenerWidget<T: WidgetBase + WidgetExt, TRIG> {
     #[allow(dead_code)]
     pub(crate) wid: T,
