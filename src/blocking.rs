@@ -90,12 +90,10 @@ impl<T: WidgetBase + WidgetExt> ValueListener<T> for DualListener {
     type Value = ();
 
     fn new(wid: &mut T) -> Self {
-        // You cannot call `ValueListener::new` twice directly,
-        // or you will get an error: `value used here after move`.
-        // But you can wrap `ValueListener::new` in a fn and then pass the compile.
-        let triggered_listener = |wid| TriggeredListener::new(wid);
-        let event_listener = |wid| EventListener::new(wid);
-        Self(triggered_listener(wid), event_listener(wid))
+        // We have to explicitly reborrow `wid` to satisity the compiler
+        let triggered_listener = TriggeredListener::new(&mut *wid);
+        let event_listener = EventListener::new(&mut *wid);
+        Self(triggered_listener, event_listener)
     }
 
     /// should not be called

@@ -108,9 +108,9 @@ impl<T: WidgetBase + WidgetExt> ValueListener<T> for DualListener {
     type Value = ();
 
     fn new(wid: &mut T) -> Self {
-        let triggered_listener = |wid| TriggeredListener::new(wid);
-        let event_listener = |wid| EventListener::new(wid);
-        Self(triggered_listener(wid), event_listener(wid))
+        let triggered_listener = TriggeredListener::new(&mut *wid);
+        let event_listener = EventListener::new(&mut *wid);
+        Self(triggered_listener, event_listener)
     }
 
     /// should not be called
