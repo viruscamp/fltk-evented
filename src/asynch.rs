@@ -37,7 +37,7 @@ pub struct TriggeredListener(Arc<AtomicBool>);
 impl<T: WidgetBase + WidgetExt> ValueListener<T> for TriggeredListener {
     type Value = bool;
 
-    fn new(wid: &mut T) -> (Self, &mut T) {
+    fn new(wid: &mut T) -> Self {
         let triggered = Arc::new(AtomicBool::new(false));
         wid.set_callback({
             let triggered = triggered.clone();
@@ -49,7 +49,7 @@ impl<T: WidgetBase + WidgetExt> ValueListener<T> for TriggeredListener {
                 });
             }
         });
-        (TriggeredListener(triggered), wid)
+        TriggeredListener(triggered)
     }
 
     fn value(&self) -> bool {
@@ -71,7 +71,7 @@ pub struct EventListener(Arc<AtomicI32>);
 impl<T: WidgetBase + WidgetExt> ValueListener<T> for EventListener {
     type Value = Event;
 
-    fn new(wid: &mut T) -> (Self, &mut T) {
+    fn new(wid: &mut T) -> Self {
         let event = Arc::new(AtomicI32::new(Event::NoEvent.bits()));
         wid.handle({
             let event = event.clone();
@@ -84,7 +84,7 @@ impl<T: WidgetBase + WidgetExt> ValueListener<T> for EventListener {
                 false
             }
         });
-        (EventListener(event), wid)
+        EventListener(event)
     }
 
     fn value(&self) -> Event {
@@ -107,10 +107,10 @@ pub struct DualListener(TriggeredListener, EventListener);
 impl<T: WidgetBase + WidgetExt> ValueListener<T> for DualListener {
     type Value = ();
 
-    fn new(wid: &mut T) -> (Self, &mut T) {
-        let (triggered_listener, wid) = TriggeredListener::new(wid);
-        let (event_listener, wid) = EventListener::new(wid);
-        (Self(triggered_listener, event_listener), wid)
+    fn new(wid: &mut T) -> Self {
+        let triggered_listener = |wid| TriggeredListener::new(wid);
+        let event_listener = |wid| EventListener::new(wid);
+        Self(triggered_listener(wid), event_listener(wid))
     }
 
     /// should not be called

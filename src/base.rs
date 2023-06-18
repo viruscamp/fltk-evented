@@ -6,8 +6,8 @@ use fltk::{
 pub(crate) trait ValueListener<T: WidgetBase + WidgetExt> : Sized {
     /// use associate type to make sure that only one `ValueListener` can be `impl`ed.
     type Value;
-    /// register callback, returns `&mut T` to make borrow checker happy.
-    fn new(wid: &mut T) -> (Self, &mut T);
+    /// register callback
+    fn new(wid: &mut T) -> Self;
     /// get event
     fn value(&self) -> Self::Value;
 }
@@ -24,7 +24,7 @@ impl<T, TRIG, V> From<T> for BaseListenerWidget<T, TRIG>
     where T: WidgetBase + WidgetExt, TRIG: ValueListener<T, Value=V>
 {
     fn from(mut wid: T) -> Self {
-        let (trig, _) = <TRIG as ValueListener<T>>::new(&mut wid);
+        let trig = ValueListener::new(&mut wid);
         Self { wid, trig }
     }
 }

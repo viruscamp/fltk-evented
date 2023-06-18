@@ -27,7 +27,7 @@ pub struct TriggeredListener(Rc<Cell<bool>>);
 impl<T: WidgetBase + WidgetExt> ValueListener<T> for TriggeredListener {
     type Value = bool;
 
-    fn new(wid: &mut T) -> (Self, &mut T) {
+    fn new(wid: &mut T) -> Self {
         let triggered = Rc::new(Cell::new(false));
         wid.set_callback({
             let triggered = triggered.clone();
@@ -35,7 +35,7 @@ impl<T: WidgetBase + WidgetExt> ValueListener<T> for TriggeredListener {
                 triggered.set(true);
             }
         });
-        (TriggeredListener(triggered), wid)
+        TriggeredListener(triggered)
     }
 
     fn value(&self) -> bool {
@@ -57,7 +57,7 @@ pub struct EventListener(Rc<Cell<Event>>);
 impl<T: WidgetBase + WidgetExt> ValueListener<T> for EventListener {
     type Value = Event;
 
-    fn new(wid: &mut T) -> (Self, &mut T) {
+    fn new(wid: &mut T) -> Self {
         let event = Rc::new(Cell::new(Event::NoEvent));
         wid.handle({
             let event = event.clone();
@@ -66,7 +66,7 @@ impl<T: WidgetBase + WidgetExt> ValueListener<T> for EventListener {
                 true
             }
         });
-        (EventListener(event), wid)
+        EventListener(event)
     }
 
     fn value(&self) -> Event {
@@ -89,11 +89,13 @@ pub struct DualListener(TriggeredListener, EventListener);
 impl<T: WidgetBase + WidgetExt> ValueListener<T> for DualListener {
     type Value = ();
 
-    fn new(wid: &mut T) -> (Self, &mut T) {
-        // the `&mut T` returned is used here
-        let (triggered_listener, wid) = TriggeredListener::new(wid);
-        let (event_listener, wid) = EventListener::new(wid);
-        (Self(triggered_listener, event_listener), wid)
+    fn new(wid: &mut T) -> Self {
+        // You cannot call `ValueListener::new` twice directly,
+        // or you will get an error: `value used here after move`.
+        // But you can wrap `ValueListener::new` in a fn and then pass the compile.
+        let triggered_listener = |wid| TriggeredListener::new(wid);
+        let event_listener = |wid| EventListener::new(wid);
+        Self(triggered_listener(wid), event_listener(wid))
     }
 
     /// should not be called
