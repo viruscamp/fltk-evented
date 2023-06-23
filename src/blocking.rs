@@ -90,9 +90,8 @@ impl<T: WidgetBase + WidgetExt> ValueListener<T> for DualListener {
     type Value = ();
 
     fn new(wid: &mut T) -> Self {
-        // We have to explicitly reborrow `wid` to satisity the compiler
-        let triggered_listener = TriggeredListener::new(&mut *wid);
-        let event_listener = EventListener::new(&mut *wid);
+        let triggered_listener = TriggeredListener::new(wid);
+        let event_listener = EventListener::new(wid);
         Self(triggered_listener, event_listener)
     }
 
